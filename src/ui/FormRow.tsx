@@ -38,15 +38,15 @@ const Error = styled.span`
 `;
 
 type FormRowProps = {
-  labal?: string;
+  label?: string;
   error?: string | undefined;
   children: ReactNode;
   name?: string;
 };
-export const FormRow: FC<FormRowProps> = ({ labal, error, children, name }) => {
+export const FormRow: FC<FormRowProps> = ({ label, error, children, name }) => {
   return (
     <StyledFormRow>
-      <Label htmlFor={name}>{labal}</Label>
+      <Label htmlFor={name}>{label}</Label>
       {children}
       {error && <Error>{error}</Error>}
     </StyledFormRow>

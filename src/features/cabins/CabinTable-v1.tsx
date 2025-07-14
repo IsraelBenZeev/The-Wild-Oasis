@@ -1,8 +1,9 @@
+import { useQuery } from '@tanstack/react-query';
 import type { FC } from 'react';
 import styled from 'styled-components';
+import { getCabins } from '../../services/apiCabins';
 import Spinner from '../../ui/Spinner';
 import { CabinRow } from './CabinRow';
-import { useGetCabins } from './useGetCabins';
 
 const Table = styled.div`
   border: 1px solid var(--color-grey-200);
@@ -29,7 +30,15 @@ const TableHeader = styled.header`
 `;
 
 export const CabinTable: FC = () => {
-  const { cabins, error, isPending } = useGetCabins();
+  const {
+    isPending,
+    data: cabins,
+    error,
+  } = useQuery({
+    queryKey: ['cabins'],
+    queryFn: getCabins,
+  });
+  console.log(cabins);
   if (isPending) return <Spinner />;
   return (
     <Table role="table">

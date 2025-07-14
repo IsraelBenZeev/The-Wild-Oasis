@@ -1,65 +1,47 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
-import toast from 'react-hot-toast';
 import { Input } from '../../ui/Input';
 import Form from '../../ui/Form';
 import { Button } from '../../ui/Button';
 import FileInput from '../../ui/FileInput';
 import Textarea from '../../ui/Textarea';
-import type { Dispatch, FC, SetStateAction } from 'react';
+import type { Dispatch, FC } from 'react';
 import type { CabinType } from '../../types/CabinType';
-import { creatEditCabin } from '../../services/apiCabins';
 import { FormRow } from '../../ui/FormRow';
-import { id } from 'date-fns/locale';
-
-export const CreateCabinForm: FC<{
+import { useCreateCabin } from './useCreateCabin';
+import { useEditCabin } from './useEditCabin';
+type CreateCabinFormProps = {
   cabinToEdit?: CabinType;
   onSetShowFormEdit: Dispatch<React.SetStateAction<boolean>>;
-}> = ({ cabinToEdit = {}, onSetShowFormEdit }) => {
+};
+
+export const CreateCabinForm: FC<CreateCabinFormProps> = ({
+  cabinToEdit = {},
+  onSetShowFormEdit,
+}) => {
   const { id: editID, ...editValues } = cabinToEdit!;
   const isEditSession = Boolean(editID);
   const { register, handleSubmit, reset, getValues, formState } = useForm({
     defaultValues: isEditSession ? editValues : {},
   });
   const { errors } = formState;
-  console.log(errors);
-  const queryClient = useQueryClient();
-  const { mutate: creatCabin, isPending: isCreating } = useMutation({
-    mutationFn: (newCabin: CabinType) => creatEditCabin(newCabin),
-    onSuccess: () => {
-      toast.success('New cabin successfully created');
-      queryClient.invalidateQueries({ queryKey: ['cabins'] });
-      reset();
-    },
-    onError: (err) => {
-      toast.error(err.message);
-    },
-  });
-  const { mutate: editCabin, isPending: isEditing } = useMutation({
-    mutationFn: ({
-      newCabin,
-      editID,
-    }: {
-      newCabin: CabinType;
-      editID: number;
-    }) => creatEditCabin(newCabin, editID),
-    onSuccess: () => {
-      toast.success('Cabin successfully edited');
-      queryClient.invalidateQueries({ queryKey: ['cabins'] });
-      onSetShowFormEdit(false);
-      reset();
-    },
-    onError: (err) => {
-      toast.error(err.message);
-    },
-  });
+  const { creatCabin, isCreating } = useCreateCabin();
+  const { isEditing, editCabin } = useEditCabin();
 
   const isWorking = isCreating || isEditing;
   const onSubmit = (data) => {
     console.log('data from on submit', data);
     const image = typeof data.image === 'string' ? data.image : data.image[0];
-    if (isEditSession) editCabin({ newCabin: { ...data, image }, editID });
-    else creatCabin({ ...data, image: image });
+    if (isEditSession)
+      editCabin(
+        { newCabin: { ...data, image }, editID },
+        {
+          onSuccess: () => {
+            reset();
+            onSetShowFormEdit(false);
+          },
+        }
+      );
+    else creatCabin({ ...data, image: image }, { onSuccess: () => reset() });
     // editCabin;
   };
   const onError = (erros) => {
@@ -67,7 +49,7 @@ export const CreateCabinForm: FC<{
   };
   return (
     <Form onSubmit={handleSubmit(onSubmit, onError)}>
-      <FormRow name="name" labal="name" error={errors?.name?.message}>
+      <FormRow name="name" label="name" error={errors?.name?.message}>
         <Input
           type="text"
           id="name"
@@ -77,7 +59,7 @@ export const CreateCabinForm: FC<{
       </FormRow>
 
       <FormRow
-        labal="Maxomum capacity"
+        label="Maxomum capacity"
         error={errors?.maxCapacity?.message}
         name="maxCapacity"
       >
@@ -96,7 +78,7 @@ export const CreateCabinForm: FC<{
       </FormRow>
 
       <FormRow
-        labal="Regular price"
+        label="Regular price"
         error={errors?.regularPrice?.message}
         name="regularPrice"
       >
@@ -115,7 +97,7 @@ export const CreateCabinForm: FC<{
       </FormRow>
 
       <FormRow
-        labal="Doscount"
+        label="Discount"
         error={errors?.discount?.message}
         name="discount"
       >
@@ -134,7 +116,7 @@ export const CreateCabinForm: FC<{
       </FormRow>
 
       <FormRow
-        labal="Description for website"
+        label="Description for website"
         error={errors?.description?.message}
         name="description"
       >
@@ -142,12 +124,11 @@ export const CreateCabinForm: FC<{
           $type="number"
           id="description"
           defaultValue=""
-          disabled={isWorking}
           {...register('description', { required: 'This field required' })}
         />
       </FormRow>
 
-      <FormRow labal="Cabin photo" error={errors?.image?.message}>
+      <FormRow label="Cabin photo" error={errors?.image?.message}>
         <FileInput
           id="image"
           accept="image/*"
@@ -159,7 +140,10 @@ export const CreateCabinForm: FC<{
 
       <FormRow>
         {/* type is an HTML attribute! */}
-        <Button $variation="secondary" type="reset">
+        <Button
+          $variation="secondary"
+          type="reset"
+        >
           Cancel
         </Button>
         <Button disabled={isWorking}>
